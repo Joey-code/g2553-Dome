@@ -1,0 +1,34 @@
+#include<msp430g2553.h>
+int pwm_start,pwm_end,pwm_wide=0;
+void main(void) 
+{ 
+ WDTCTL = WDTPW + WDTHOLD; // Stop WDT 
+ P1DIR = 0x01;// P1.5 输出 
+ P1SEL = 0x05;  // P1.5输出ACLK 
+  BCSCTL1 = CALBC1_8MHZ;                    // Set range
+  DCOCTL = CALDCO_8MHZ;                     // Set DCO step + modulation */
+//BCSCTL1 |= DIVA_3; //ACLK要进行8分频,ACLK=4K ? 
+ TACCTL1 =CAP+CM_3+CCIS_0+SCS+CCIE; //捕获模式，上升和下降都捕获，选择CCI2A，同步，捕获中断开 ? ?? ?//Capture input select: 0 - CCI2A 
+ TACTL = TASSEL_2 + MC_2 ;//SMCLK=8M,L连续计数模式 
+ _EINT(); //开总中断 
+ LPM0; 
+ _NOP();
+ pwm_wide=pwm_end-pwm_start; 
+while(1);
+ } 
+// Timer_A3 Interrupt Vector (TAIV) handler
+ #pragma vector=TIMER0_A1_VECTOR
+ __interrupt void Timer_A(void) 
+{
+ switch(TAIV) 
+{case 4:break; 
+ case 2: 
+if(TACCTL1 & CCI)  
+pwm_start=CCR1; 
+else 
+pwm_end=CCR1; //pwm_wide=pwm_end-pwm_start; ? ? 
+break; 
+ case 10: break; 
+ } 
+ LPM0_EXIT; 
+} 
